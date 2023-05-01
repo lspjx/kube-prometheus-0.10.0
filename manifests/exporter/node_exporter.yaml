@@ -1,0 +1,50 @@
+---
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  labels:
+    app: hw-hosts
+    release: hw-hosts
+  name: hw-hosts
+  namespace: monitoring
+spec:
+  endpoints:
+  - interval: 30s
+    port: metrcis
+  selector:
+    matchLabels:
+      app: hw-hosts
+  namespaceSelector:
+      matchNames:
+      - monitoring
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: hw-hosts
+  labels:
+    app: hw-hosts
+  namespace: monitoring
+spec:
+  type: ClusterIP
+  clusterIP: None
+  ports:
+  - name: metrcis
+    port: 9100
+    targetPort: 9100
+    protocol: TCP
+---
+apiVersion: v1
+kind: Endpoints
+metadata:
+  name: hw-hosts
+  labels:
+    app: hw-hosts
+  namespace: monitoring
+subsets:
+  - addresses:
+    - ip: 139.9.107.151
+    ports:
+    - name: metrcis
+      port: 9100
+      protocol: TCP

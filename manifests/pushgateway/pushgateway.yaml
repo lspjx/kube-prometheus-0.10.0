@@ -1,0 +1,106 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app.kubernetes.io/name: pushgateway
+  name: pushgateway
+  namespace: monitoring
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: pushgateway
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: pushgateway
+    spec:
+      nodeSelector:
+        kubernetes.io/os: linux
+      containers:
+      - args:
+        - --persistence.file=/pushgateway/pushgateway.data
+        - --persistence.interval=5m
+        - --push.disable-consistency-check
+        image: prom/pushgateway:v1.4.3
+        imagePullPolicy: IfNotPresent
+        livenessProbe:
+          failureThreshold: 3
+          httpGet:
+            path: /-/healthy
+            port: 9091
+            scheme: HTTP
+          initialDelaySeconds: 10
+          periodSeconds: 10
+          successThreshold: 1
+          timeoutSeconds: 10
+        name: pushgateway
+        ports:
+        - containerPort: 9091
+          name: http
+          protocol: TCP
+        readinessProbe:
+          failureThreshold: 3
+          httpGet:
+            path: /-/ready
+            port: 9091
+            scheme: HTTP
+          initialDelaySeconds: 10
+          periodSeconds: 10
+          successThreshold: 1
+          timeoutSeconds: 10
+        resources:
+          limits:
+            cpu: 50m
+            memory: 512Mi
+          requests:
+            cpu: 20m
+            memory: 50Mi
+      restartPolicy: Always
+---
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app.kubernetes.io/name: pushgateway
+  name: pushgateway
+  namespace: monitoring
+spec:
+  type: NodePort
+  ports:
+  - name: http
+    nodePort: 30339
+    port: 9091
+    protocol: TCP
+    targetPort: http
+  selector:
+    app.kubernetes.io/name: pushgateway
+---
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  labels:
+    app.kubernetes.io/name: pushgateway
+  name: pushgateway
+  namespace: monitoring
+spec:
+  endpoints:
+  - interval: 30s
+    path: /metrics
+    port: http
+    scheme: http
+    relabelings:
+    - sourceLabels:
+      - pod
+      targetLabel: pod
+      regex: "(.*)"
+      replacement: pushgateway
+    - sourceLabels:
+      - instance
+      targetLabel: instance
+      regex: "(.*)"
+      replacement: pushgateway
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: pushgateway

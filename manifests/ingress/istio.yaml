@@ -1,0 +1,85 @@
+apiVersion: networking.istio.io/v1alpha3
+kind: Gateway
+metadata:
+  name: web-gateway
+  namespace: monitoring
+spec:
+  selector:
+    istio: ingressgateway
+  servers:
+  - port:
+      number: 80
+      name: http
+      protocol: HTTP
+    hosts:
+    - grafana-istio.example.com
+    - prometheus-istio.example.com
+    - alertmanager-istio.example.com
+    tls:
+      httpsRedirect: true # sends 301 redirect for http requests
+  - port:
+      number: 443
+      name: https-443
+      protocol: HTTPS
+    hosts:
+    - "*"
+    tls:
+      mode: SIMPLE # enables HTTPS on this port
+      #credentialName: monitoring/tls-ky-tech-com-cn # fetches certs from Kubernetes secret
+      credentialName: example-tls
+      #serverCertificate: /etc/istio/ingressgateway-certs/tls.crt
+      #privateKey: /etc/istio/ingressgateway-certs/tls.key
+---
+apiVersion: networking.istio.io/v1alpha3
+kind: VirtualService
+metadata:
+  name: web-vs-grafana
+  namespace: monitoring
+spec:
+  hosts:
+    - grafana-istio.example.com
+  gateways:
+  - monitoring/web-gateway
+  http:
+  - match:
+    route:
+    - destination:
+        port:
+          number: 3000
+        host: grafana.monitoring.svc.cluster.local
+---
+apiVersion: networking.istio.io/v1alpha3
+kind: VirtualService
+metadata:
+  name: web-vs-prometheus
+  namespace: monitoring
+spec:
+  hosts:
+    - prometheus-istio.example.com
+  gateways:
+  - monitoring/web-gateway
+  http:
+  - match:
+    route:
+    - destination:
+        port:
+          number: 9090
+        host: prometheus-k8s.monitoring.svc.cluster.local
+---
+apiVersion: networking.istio.io/v1alpha3
+kind: VirtualService
+metadata:
+  name: web-vs-alertmanager
+  namespace: monitoring
+spec:
+  hosts:
+    - alertmanager-istio.example.com
+  gateways:
+  - monitoring/web-gateway
+  http:
+  - match:
+    route:
+    - destination:
+        port:
+          number: 9093
+        host: alertmanager-main.monitoring.svc.cluster.local
