@@ -1,0 +1,28 @@
+apiVersion: v1
+kind: Secret
+metadata:
+  labels:
+    app.kubernetes.io/component: grafana
+    app.kubernetes.io/name: grafana
+    app.kubernetes.io/part-of: kube-prometheus
+    app.kubernetes.io/version: 8.3.3
+  name: grafana-config
+  namespace: monitoring
+stringData:
+  grafana.ini: |
+    [date_formats]
+    default_timezone = UTC
+    [database]
+    type = mysql
+    host = mysql.mysql.svc.cluster.local:3306
+    name = grafana
+    user = grafana
+    password = grafana
+    [alerting]
+    enabled = false
+    [unified_alerting]
+    enabled = true
+    ha_listen_address = "${POD_IP}:9094"
+    ha_peers = "grafana.monitoring.svc.cluster.local:9094"
+    ha_advertise_address = "${POD_IP}:9094"
+type: Opaque
