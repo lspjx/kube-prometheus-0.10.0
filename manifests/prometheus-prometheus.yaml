@@ -58,8 +58,8 @@ spec:
   serviceMonitorNamespaceSelector: {}
   serviceMonitorSelector: {}
   version: 2.32.1
-  secrets:
-  - etcd-certs 
-  additionalScrapeConfigs:
-    name: additional-scrape-configs
-    key: prometheus-additional.yaml
+  #secrets:
+  #- etcd-certs 
+  #additionalScrapeConfigs:
+  #  name: additional-scrape-configs
+  #  key: prometheus-additional.yaml
